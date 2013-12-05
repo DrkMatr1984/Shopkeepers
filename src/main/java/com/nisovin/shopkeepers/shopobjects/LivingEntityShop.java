@@ -65,15 +65,12 @@ public abstract class LivingEntityShop extends ShopObject {
 		}
 		// spawn villager
 		if (entity == null || !entity.isValid()) {
-			entity = (LivingEntity)w.spawnEntity(loc, getEntityType());
+			// try to bypass entity-spawn blocking plugins:
+			EntityType entityType = getEntityType();
+			ShopkeepersPlugin.getInstance().forceCreatureSpawn(loc, entityType);
+			entity = (LivingEntity)w.spawnEntity(loc, entityType);
 			uuid = entity.getUniqueId().toString();
-			String name = shopkeeper.getName();
-			if (name != null && !name.isEmpty() && Settings.showNameplates) {
-				if (Settings.nameplatePrefix != null && !Settings.nameplatePrefix.isEmpty()) {
-					name = ChatColor.translateAlternateColorCodes('&', Settings.nameplatePrefix) + name;
-				}
-				setEntityName(name);
-			}
+			this.setName(shopkeeper.getName());
 		}
 		if (entity != null && entity.isValid()) {
 			entity.setRemoveWhenFarAway(false);
@@ -113,10 +110,11 @@ public abstract class LivingEntityShop extends ShopObject {
 	@Override
 	public void setName(String name) {
 		if (entity != null && entity.isValid() && Settings.showNameplates) {
-			if (name != null) {
+			if (name != null && !name.isEmpty()) {
 				if (Settings.nameplatePrefix != null && !Settings.nameplatePrefix.isEmpty()) {
-					name = ChatColor.translateAlternateColorCodes('&', Settings.nameplatePrefix) + name;
+					name = Settings.nameplatePrefix + name;
 				}
+				name = ChatColor.translateAlternateColorCodes('&', name);
 				if (name.length() > 32) {
 					name = name.substring(0, 32);
 				}

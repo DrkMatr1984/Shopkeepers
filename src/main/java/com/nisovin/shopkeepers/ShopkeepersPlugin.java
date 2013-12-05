@@ -28,6 +28,7 @@ import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -72,11 +73,19 @@ public class ShopkeepersPlugin extends JavaPlugin {
 	BlockFace[] chestProtectFaces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
 	BlockFace[] hopperProtectFaces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN};
 	
+	private CreatureForceSpawnListener creatureForceSpawnListener = null;
+	
 	@Override
 	public void onEnable() {
 		plugin = this;
 		
+		// try to load suitable NMS code
         NMSManager.load(this);
+        if (NMSManager.getProvider() == null) {
+            plugin.getLogger().severe("Incompatible server version: Shopkeepers cannot be enabled.");
+            this.setEnabled(false);
+            return;
+        }
 		
 		// get config
 		File file = new File(getDataFolder(), "config.yml");
@@ -107,6 +116,13 @@ public class ShopkeepersPlugin extends JavaPlugin {
 			}
 		}
 		
+		// register force-creature-spawn event:
+		PluginManager pm = getServer().getPluginManager();
+		if (Settings.bypassSpawnBlocking) {
+			creatureForceSpawnListener = new CreatureForceSpawnListener();
+			pm.registerEvents(creatureForceSpawnListener, this);
+		}
+		
 		// load shopkeeper saved data
 		load();
 		
@@ -126,7 +142,7 @@ public class ShopkeepersPlugin extends JavaPlugin {
 		}
 		
 		// register events
-		PluginManager pm = getServer().getPluginManager();
+		
 		pm.registerEvents(new ShopListener(this), this);
 		pm.registerEvents(new CreateListener(this), this);
 		if (Settings.enableVillagerShops) {
@@ -808,7 +824,10 @@ public class ShopkeepersPlugin extends JavaPlugin {
 		try {
 			if (Settings.fileEncoding != null && !Settings.fileEncoding.isEmpty()) {
 				FileInputStream stream = new FileInputStream(file);
-				String data = new Scanner(stream, Settings.fileEncoding).useDelimiter("\\A").next();
+				Scanner scanner = new Scanner(stream, Settings.fileEncoding);
+				scanner.useDelimiter("\\A");
+				String data = scanner.next();
+				scanner.close();
 				config.loadFromString(data);
 				stream.close();
 			} else {
@@ -898,6 +917,12 @@ public class ShopkeepersPlugin extends JavaPlugin {
 			debug("Saved shopkeeper data");
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	public void forceCreatureSpawn(Location location, EntityType entityType) {
+		if (creatureForceSpawnListener != null && Settings.bypassSpawnBlocking) {
+			creatureForceSpawnListener.forceCreatureSpawn(location, entityType);
 		}
 	}
 	
