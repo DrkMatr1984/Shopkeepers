@@ -369,6 +369,30 @@ public class ShopkeepersPlugin extends JavaPlugin {
 				sender.sendMessage("Shopkeeper set for hire");
 				return true;
 			}
+			
+			// open remote shop
+			if (args.length >= 2 && args[0].equalsIgnoreCase("remote") && player.hasPermission("shopkeeper.remote")) {
+				String shopName = "";
+				for (int i = 1; i < args.length; i++) {
+					if (shopName.length() > 0) shopName += " ";
+					shopName += args[i];
+				}
+				boolean opened = false;
+				for (List<Shopkeeper> list : allShopkeepersByChunk.values()) {
+					for (Shopkeeper shopkeeper : list) {
+						if (shopkeeper instanceof AdminShopkeeper && shopkeeper.getName() != null && ChatColor.stripColor(shopkeeper.getName()).equalsIgnoreCase(shopName)) {
+							openTradeWindow(shopkeeper, player);
+							opened = true;
+							break;
+						}
+					}
+					if (opened) break;
+				}
+				if (!opened) {
+					player.sendMessage("No shopkeeper with that name found.");
+				}
+				return true;
+			}
 						
 			// get the spawn location for the shopkeeper
 			if (block != null && block.getType() != Material.AIR) {
@@ -406,17 +430,25 @@ public class ShopkeepersPlugin extends JavaPlugin {
 								shopType = ShopkeeperType.PLAYER_BUY;
 							} else if (args[0].toLowerCase().startsWith("trad")) {
 								shopType = ShopkeeperType.PLAYER_TRADE;
-							} else if (args[0].toLowerCase().equals("villager")) {
+							} else if (args[0].toLowerCase().equals("villager") && Settings.enableVillagerShops) {
 								shopObjType = ShopObjectType.VILLAGER;
-							} else if (args[0].toLowerCase().equals("sign")) {
+							} else if (args[0].toLowerCase().equals("sign") && Settings.enableSignShops) {
 								shopObjType = ShopObjectType.SIGN;
+							} else if (args[0].toLowerCase().equals("witch") && Settings.enableWitchShops) {
+								shopObjType = ShopObjectType.WITCH;
+							} else if (args[0].toLowerCase().equals("creeper") && Settings.enableCreeperShops) {
+								shopObjType = ShopObjectType.CREEPER;
 							}
 						}
 						if (args.length >= 2) {
-							if (args[1].equalsIgnoreCase("villager")) {
+							if (args[1].equalsIgnoreCase("villager") && Settings.enableVillagerShops) {
 								shopObjType = ShopObjectType.VILLAGER;
-							} else if (args[1].equalsIgnoreCase("sign")) {
+							} else if (args[1].equalsIgnoreCase("sign") && Settings.enableSignShops) {
 								shopObjType = ShopObjectType.SIGN;
+							} else if (args[1].equalsIgnoreCase("witch") && Settings.enableWitchShops) {
+								shopObjType = ShopObjectType.WITCH;
+							} else if (args[1].equalsIgnoreCase("creeper") && Settings.enableCreeperShops) {
+								shopObjType = ShopObjectType.CREEPER;
 							}
 						}
 						if (shopType != null && !shopType.hasPermission(player)) {
@@ -437,12 +469,12 @@ public class ShopkeepersPlugin extends JavaPlugin {
 					ShopObjectType shopObjType = ShopObjectType.VILLAGER;
 					Location loc = block.getLocation().add(0, 1.5, 0);
 					if (args.length > 0) {
-						if (args[0].equals("sign")) {
+						if (args[0].equals("sign") && Settings.enableSignShops) {
 							shopObjType = ShopObjectType.SIGN;
 							loc = block.getLocation();
-						} else if (args[0].equals("witch")) {
+						} else if (args[0].equals("witch") && Settings.enableWitchShops) {
 							shopObjType = ShopObjectType.WITCH;
-						} else if (args[0].equals("creeper")) {
+						} else if (args[0].equals("creeper") && Settings.enableCreeperShops) {
 							shopObjType = ShopObjectType.CREEPER;
 						}
 					}
